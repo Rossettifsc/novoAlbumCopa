@@ -17,15 +17,15 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'tab1',
-        component: () => import('@/views/Tab1Page.vue')
+        component: () => import('@/views/AlbumPage.vue')
       },
       {
         path: 'tab2',
-        component: () => import('@/views/Tab2Page.vue')
+        component: () => import('@/views/CollectionPage.vue')
       },
       {
         path: 'tab3',
-        component: () => import('@/views/Tab3Page.vue')
+        component: () => import('@/views/ProfilePage.vue')
       }
     ]
   }
