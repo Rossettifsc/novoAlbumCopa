@@ -46,8 +46,8 @@ import { useRouter } from 'vue-router';
 import { IonPage, IonContent, IonCard, IonCardContent, IonGrid, IonRow, IonCol, IonText, IonItem, IonLabel, IonSelect, IonSelectOption, IonSearchbar, IonProgressBar } from '@ionic/vue';
 // import { useAuth } from '../composables/useAuth';
 import { useAlbum } from '../composables/useAlbum';
-import AppHeader from '../components/AppHeader.vue';
-import StickerList from '../components/StickerList.vue';
+import AppHeader from '../composables/AppHeader.vue';
+import StickerList from '../composables/StickerList.vue';
 
 const router = useRouter();
 // const { logout } = useAuth();
