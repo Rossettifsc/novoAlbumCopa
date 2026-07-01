@@ -4,23 +4,23 @@
             <ion-label>Cadastro de Contato</ion-label>
         </ion-item>
 
-        <IonItem>
-            <ion-label position="stacked">Nome</IonItem>
-            <ion-input v-model="form.nome" required/>>
-        </IonItem>
+        <ion-item>
+            <ion-label position="stacked">Nome</ion-label>
+            <ion-input v-model="form.nome" required />
+        </ion-item>
 
     <ion-note color="danger" v-if="errors.nome">{{ errors.nome }}</ion-note>
 
-    <ion-item>
-        <ion-label position="stacked">email</IonItem>
-        <ion-input type="email" v-model="form.email" required/>
-    </ion-item>
+        <ion-item>
+            <ion-label position="stacked">Email</ion-label>
+            <ion-input type="email" v-model="form.email" required />
+        </ion-item>
     <ion-note color="danger" v-if="errors.email">{{ errors.email }}</ion-note> 
 
-        <IonItem>
-            <ion-label position="stacked">Telefone</IonItem>
+        <ion-item>
+            <ion-label position="stacked">Telefone</ion-label>
             <ion-input v-model="form.telefone" />
-        </IonItem>
+        </ion-item>
 
         <ion-button expand="block" type="button" @click="salvarContato">Salvar</ion-button>
 

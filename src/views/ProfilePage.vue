@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonItem, IonLabel } from '@ionic/vue';
 import { useAlbum } from '../composables/useAlbum';
-import AppHeader from '../components/AppHeader.vue';
+import AppHeader from '../composables/AppHeader.vue';
 
 const { totalStickers, collectedStickersCount } = useAlbum();
 
