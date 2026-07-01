@@ -21,10 +21,26 @@
 </ion-item>
 </ion-list>
  
-  <ion-alert ...
+   <ion-alert
+    :is-open="editAlert.open"
+    header="Editar Contato"
+    :inputs="editInputs"
+    :buttons="[
+      { text: 'Cancelar', role: 'cancel', handler: closeEditAlert },
+      { text: 'Salvar', handler: salvarEdicao }
+    ]"
+    @didDismiss="closeEditAlert"
   />
- 
-  <ion-alert ...
+
+  <ion-alert
+    :is-open="deleteAlert.open"
+    header="Confirmar Exclusão"
+    message="Deseja realmente excluir este contato?"
+    :buttons="[
+      { text: 'Cancelar', role: 'cancel', handler: closeDeleteAlert },
+      { text: 'Excluir', role: 'destructive', handler: excluirContato }
+    ]"
+    @didDismiss="closeDeleteAlert"
   />
 </template>
 
