@@ -10,13 +10,13 @@
           <ion-item lines="none">
             <ion-label>
               <p>Nome</p>
-              <h2>Usuário</h2>
+              <h2>{{ user?.nome || 'Usuário' }}</h2>
             </ion-label>
           </ion-item>
           <ion-item lines="none">
             <ion-label>
-              <p>E-mail</p>
-              <h2>usuario@exemplo.com</h2>
+              <p>Login</p>
+              <h2>{{ user?.login || 'Não logado' }}</h2>
             </ion-label>
           </ion-item>
         </ion-card-content>
@@ -42,23 +42,41 @@
           <ion-item lines="none">
             <ion-label>
               <p>Progresso</p>
-              <h2>{{ Math.round((collectedStickersCount / totalStickers) * 100) }}%</h2>
+              <h2>{{ totalStickers > 0 ? Math.round((collectedStickersCount / totalStickers) * 100) : 0 }}%</h2>
             </ion-label>
           </ion-item>
         </ion-card-content>
       </ion-card>
+
+      <ion-list class="ion-margin-top">
+        <ion-item button router-link="/about">
+          <ion-label>Sobre o Aplicativo</ion-label>
+          <ion-icon :icon="informationCircleOutline" slot="end"></ion-icon>
+        </ion-item>
+      </ion-list>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonItem, IonLabel } from '@ionic/vue';
+import { IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonItem, IonLabel, IonList, IonIcon } from '@ionic/vue';
+import { informationCircleOutline } from 'ionicons/icons';
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuth } from '../composables/useAuth';
 import { useAlbum } from '../composables/useAlbum';
 import AppHeader from '../composables/AppHeader.vue';
 
-const { totalStickers, collectedStickersCount } = useAlbum();
+const router = useRouter();
+const { user, logout } = useAuth();
+const { totalStickers, collectedStickersCount, loadStickers } = useAlbum();
+
+onMounted(async () => {
+  await loadStickers();
+});
 
 const handleLogout = () => {
-  console.log('Logout clicado');
+  logout();
+  router.push('/login');
 };
 </script>

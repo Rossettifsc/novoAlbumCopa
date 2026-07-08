@@ -1,6 +1,7 @@
 <template>
   <ion-page>
-    <AppHeader title="Meu Album" show-logout @logout="handleLogout" />
+    <AppHeader title="Meu Álbum" show-logout @logout="handleLogout" />
+    
     <ion-content>
       <ion-card class="ion-margin">
         <ion-card-content>
@@ -8,7 +9,7 @@
             <ion-row>
               <ion-col size="6">
                 <ion-text>
-                  <h3>Total de Figurinhas</h3>
+                  <h3>Total</h3>
                   <p class="stat-number">{{ totalStickers }}</p>
                 </ion-text>
               </ion-col>
@@ -20,7 +21,7 @@
               </ion-col>
             </ion-row>
           </ion-grid>
-          <ion-progress-bar :value="collectedStickersCount / totalStickers"></ion-progress-bar>
+          <ion-progress-bar :value="totalStickers > 0 ? collectedStickersCount / totalStickers : 0"></ion-progress-bar>
         </ion-card-content>
       </ion-card>
 
@@ -33,41 +34,65 @@
         </ion-select>
       </ion-item>
 
-      <ion-searchbar v-model="searchQuery" @ionInput="updateSearch" placeholder="Buscar por nome ou seleção"></ion-searchbar>
+      <ion-searchbar 
+        placeholder="Buscar por nome ou seleção" 
+        :value="searchQuery"
+        @ionInput="updateSearch">
+      </ion-searchbar>
 
+      <!-- StickerList agora recebe filteredStickers que definimos no useAlbum -->
       <StickerList :stickers="filteredStickers" @toggle-collect="toggleCollect" />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { IonPage, IonContent, IonCard, IonCardContent, IonGrid, IonRow, IonCol, IonText, IonItem, IonLabel, IonSelect, IonSelectOption, IonSearchbar, IonProgressBar } from '@ionic/vue';
-// import { useAuth } from '../composables/useAuth';
+import { 
+  IonPage, IonContent, IonCard, IonCardContent, IonGrid, IonRow, 
+  IonCol, IonText, IonItem, IonLabel, IonSelect, IonSelectOption, 
+  IonSearchbar, IonProgressBar 
+} from '@ionic/vue';
+
+import { useAuth } from '../composables/useAuth';
 import { useAlbum } from '../composables/useAlbum';
-import AppHeader from '../composables/AppHeader.vue';
+import AppHeader from '../components/AppHeader.vue'; 
 import StickerList from '../composables/StickerList.vue';
 
 const router = useRouter();
-// const { logout } = useAuth();
-const { filteredStickers, totalStickers, collectedStickersCount, marcarColetada, pesquisar, setFilter, filterType } = useAlbum();
-const searchQuery = ref('');
+const { logout } = useAuth();
+const { 
+  filteredStickers, 
+  totalStickers, 
+  collectedStickersCount, 
+  marcarColetada, 
+  pesquisar, 
+  setFilter, 
+  filterType, 
+  loadStickers,
+  searchQuery
+} = useAlbum();
+
+onMounted(async () => {
+  await loadStickers();
+});
 
 const updateSearch = (event: any) => {
-  pesquisar(event.detail.value);
+  pesquisar(event.detail.value || '');
 };
 
 const updateFilter = () => {
-  setFilter(filterType.value as 'all' | 'collected' | 'pending');
+  setFilter(filterType.value);
 };
 
-const toggleCollect = (id: number) => {
-  marcarColetada(id);
+const toggleCollect = async (id: number) => {
+  await marcarColetada(id);
 };
 
 const handleLogout = () => {
-  console.log('Logout clicado');
+  logout();
+  router.push('/login');
 };
 </script>
 

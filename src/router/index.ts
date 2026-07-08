@@ -9,7 +9,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/login',
-    component: () => import('@/views/LoginPage.vue')
+    component: ( ) => import('@/views/LoginPage.vue')
   },
   {
     path: '/tabs/',
@@ -30,8 +30,16 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'tab3',
         component: () => import('@/views/ProfilePage.vue') 
+      },
+      {
+        path: 'achievements',
+        component: () => import('@/views/AchievementsPage.vue')
       }
     ]
+  },
+  {
+    path: '/about',
+    component: () => import('@/views/AboutPage.vue')
   }
 ]
 

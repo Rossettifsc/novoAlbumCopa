@@ -4,6 +4,7 @@ export interface Sticker {
   team: string;
   photo: string;
   collected: boolean;
+  raridade?: string; // Adicione esta linha
 }
 
 export const initialStickers: Sticker[] = [

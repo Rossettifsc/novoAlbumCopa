@@ -9,8 +9,14 @@
         <ion-text>
           <p>{{ sticker.team }}</p>
         </ion-text>
-        <ion-badge v-if="sticker.collected" color="success">Coletada</ion-badge>
-        <ion-badge v-else color="warning">Pendente</ion-badge>
+        <div class="badges-container">
+          <ion-badge :color="sticker.collected ? 'success' : 'medium'">
+            {{ sticker.collected ? 'Coletada' : 'Pendente' }}
+          </ion-badge>
+          <ion-badge :color="getRarityColor(sticker.raridade)">
+            {{ sticker.raridade }}
+          </ion-badge>
+        </div>
       </div>
     </ion-card-content>
   </ion-card>
@@ -27,6 +33,14 @@ defineProps<{
 const emit = defineEmits<{
   'toggle-collect': []
 }>();
+
+const getRarityColor = (rarity: string) => {
+  switch (rarity) {
+    case 'rara': return 'warning';
+    case 'brilhante': return 'secondary';
+    default: return 'medium';
+  }
+};
 
 const handleToggle = () => {
   emit('toggle-collect');
@@ -63,6 +77,13 @@ const handleToggle = () => {
   margin: 0;
   font-size: 12px;
   color: #666;
+}
+
+.badges-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
 }
 
 ion-card {

@@ -17,17 +17,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { IonPage, IonContent, IonCard, IonCardContent, IonText } from '@ionic/vue';
-// import { useAuth } from '../composables/useAuth';
+import { useAuth } from '../composables/useAuth';
 import { useAlbum } from '../composables/useAlbum';
 import AppHeader from '../composables/AppHeader.vue';
 import StickerList from '../composables/StickerList.vue';
 
 const router = useRouter();
-// const { logout } = useAuth();
-const { stickers, collectedStickersCount, marcarColetada } = useAlbum();
+const { logout } = useAuth();
+const { stickers, collectedStickersCount, marcarColetada, loadStickers } = useAlbum();
+
+onMounted(async () => {
+  await loadStickers();
+});
 
 const collectedStickers = computed(() => stickers.value.filter(s => s.collected));
 
@@ -36,6 +40,7 @@ const toggleCollect = (id: number) => {
 };
 
 const handleLogout = () => {
-  console.log('Logout clicado');
+  logout();
+  router.push('/login');
 };
 </script>

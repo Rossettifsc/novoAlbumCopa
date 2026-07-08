@@ -1,49 +1,56 @@
 import { ref, computed } from 'vue';
-import { initialStickers, Sticker } from '../data/stickers';
-
-const stickers = ref<Sticker[]>([...initialStickers]);
+import { listFigurinhas, toggleSticker } from '@/services/database';
+import { useAuth } from './useAuth';
 
 export function useAlbum() {
+  const { user } = useAuth();
+  const stickers = ref<any[]>([]);
   const searchQuery = ref('');
   const filterType = ref<'all' | 'collected' | 'pending'>('all');
 
+  const loadStickers = async () => {
+    if (user.value) {
+      // Busca as figurinhas do banco de dados
+      const data = await listFigurinhas(user.value.id, filterType.value, searchQuery.value);
+      stickers.value = data;
+    }
+  };
+
+  // ESTA É A PARTE QUE ESTAVA FALTANDO:
   const filteredStickers = computed(() => {
-    return stickers.value.filter(s => {
-      const matchesSearch = s.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                            s.team.toLowerCase().includes(searchQuery.value.toLowerCase());
-      
-      if (filterType.value === 'collected') return matchesSearch && s.collected;
-      if (filterType.value === 'pending') return matchesSearch && !s.collected;
-      return matchesSearch;
-    });
+    return stickers.value; // O filtro já é feito no banco de dados, então apenas retornamos o que veio de lá
   });
 
   const totalStickers = computed(() => stickers.value.length);
   const collectedStickersCount = computed(() => stickers.value.filter(s => s.collected).length);
 
-  const marcarColetada = (id: number) => {
-    const sticker = stickers.value.find(s => s.id === id);
-    if (sticker) {
-      sticker.collected = !sticker.collected;
+  const marcarColetada = async (id: number) => {
+    if (user.value) {
+      await toggleSticker(id, user.value.id);
+      await loadStickers(); // Recarrega para atualizar estatísticas e conquistas
     }
   };
 
-  const pesquisar = (query: string) => {
+  const pesquisar = async (query: string) => {
     searchQuery.value = query;
+    await loadStickers();
   };
 
-  const setFilter = (type: 'all' | 'collected' | 'pending') => {
+  const setFilter = async (type: 'all' | 'collected' | 'pending') => {
     filterType.value = type;
+    await loadStickers();
   };
 
   return {
     stickers,
-    filteredStickers,
+    filteredStickers, // Agora exportado corretamente
     totalStickers,
     collectedStickersCount,
     marcarColetada,
     pesquisar,
     setFilter,
-    filterType
+    filterType,
+    loadStickers,
+    searchQuery
   };
 }

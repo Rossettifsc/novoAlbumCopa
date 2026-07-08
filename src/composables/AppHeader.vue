@@ -6,7 +6,7 @@
       </ion-buttons>
       <ion-title>{{ title }}</ion-title>
       <ion-buttons slot="end" v-if="showLogout">
-        <ion-button router-link="/login">
+        <ion-button @click="handleLogout">
           <ion-icon slot="icon-only" :icon="logOut"></ion-icon>
         </ion-button>
       </ion-buttons>
@@ -28,4 +28,7 @@ const emit = defineEmits<{
   'logout': []
 }>();
 
+const handleLogout = () => {
+  emit('logout');
+};
 </script>

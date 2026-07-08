@@ -1,5 +1,5 @@
 import { ref, readonly } from 'vue';
-import { realizarLogin, addUsuario } from '@/services/database';
+import { realizarLogin, addUsuario, syncInitialStickers } from '@/services/database';
 
 const user = ref<any>(null);
 const isAuthenticated = ref(false);
@@ -11,6 +11,7 @@ export function useAuth() {
       if (users && users.length > 0) {
         user.value = users[0];
         isAuthenticated.value = true;
+        await syncInitialStickers(user.value.id);
         return true;
       }
       return false;
