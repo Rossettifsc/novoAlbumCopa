@@ -4,11 +4,12 @@ export interface Sticker {
   team: string;
   photo: string;
   collected: boolean;
-  raridade?: string; // Adicione esta linha
+  raridade?: string; // Remova a interrogação (?) daqui
 }
 
+
 export const initialStickers: Sticker[] = [
-  { id: 1, name: 'Neymar Jr', team: 'Brasil', photo: 'https://th.bing.com/th?id=OIF.v%2faVcsxxLd08BHvfJSZSyA&rs=1&pid=ImgDetMain&o=7&rm=3', collected: false },
+  { id: 1, name: 'Neymar Jr', team: 'Brasil', photo: 'https://th.bing.com/th?id=OIF.47rH6yHU0EQg1ewDnq%2bCmg&r=0&rs=1&pid=ImgDetMain&o=7&rm=3', collected: false },
   { id: 2, name: 'Lionel Messi', team: 'Argentina', photo: 'https://canal12web.com/wp-content/uploads/2026/03/asi-sera-la-figurita-de-messi-en-el-album-del-mundial-2026_w862.webp', collected: false },
   { id: 3, name: 'Cristiano Ronaldo', team: 'Portugal', photo: 'https://tse3.mm.bing.net/th/id/OIP.7f12DlI3vzfG6uHO3WEVZQHaKI?rs=1&pid=ImgDetMain&o=7&rm=3', collected: false },
   { id: 4, name: 'Gavi', team: 'Espanha', photo: 'https://down-br.img.susercontent.com/file/br-11134207-7qukw-li0tks6nqma6d6', collected: false },

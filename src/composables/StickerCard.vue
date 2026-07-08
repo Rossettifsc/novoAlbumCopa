@@ -14,7 +14,7 @@
             {{ sticker.collected ? 'Coletada' : 'Pendente' }}
           </ion-badge>
           <ion-badge :color="getRarityColor(sticker.raridade)">
-            {{ sticker.raridade }}
+            {{ sticker.raridade || 'comum' }}
           </ion-badge>
         </div>
       </div>
@@ -34,13 +34,16 @@ const emit = defineEmits<{
   'toggle-collect': []
 }>();
 
-const getRarityColor = (rarity: string) => {
-  switch (rarity) {
+const getRarityColor = (rarity?: string) => { // Adicionei a ? aqui também
+  if (!rarity) return 'medium'; // Se não tiver raridade, usa a cor padrão
+
+  switch (rarity.toLowerCase()) {
     case 'rara': return 'warning';
     case 'brilhante': return 'secondary';
     default: return 'medium';
   }
 };
+
 
 const handleToggle = () => {
   emit('toggle-collect');
