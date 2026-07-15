@@ -1,10 +1,10 @@
 <template>
-  <ion-card @click="handleToggle" :class="{ 'sticker-collected': sticker.collected }">
+  <ion-card @click="handleCardClick" :class="{ 'sticker-collected': sticker.collected }">
     <ion-card-content class="sticker-card-content">
-      <img :src="sticker.photo" :alt="sticker.name" class="sticker-image" />
+      <img :src="sticker.photo" :alt="sticker.nome" class="sticker-image" />
       <div class="sticker-info">
         <ion-text>
-          <h3>{{ sticker.name }}</h3>
+          <h3>{{ sticker.nome }}</h3>
         </ion-text>
         <ion-text>
           <p>{{ sticker.team }}</p>
@@ -16,6 +16,12 @@
           <ion-badge :color="getRarityColor(sticker.raridade)">
             {{ sticker.raridade || 'comum' }}
           </ion-badge>
+          <ion-icon
+            v-if="sticker.favorite"
+            :icon="star"
+            color="warning"
+            class="favorite-icon"
+          ></ion-icon>
         </div>
       </div>
     </ion-card-content>
@@ -23,19 +29,30 @@
 </template>
 
 <script setup lang="ts">
-import { IonCard, IonCardContent, IonText, IonBadge } from '@ionic/vue';
-import { Sticker } from '../data/stickers';
+import { IonCard, IonCardContent, IonText, IonBadge, IonIcon } from '@ionic/vue';
+import { star } from 'ionicons/icons';
 
-defineProps<{
+interface Sticker {
+  id: number;
+  nome: string;
+  team: string;
+  photo: string;
+  raridade?: string;
+  collected: number;
+  favorite: number;
+  collected_at?: string;
+}
+
+const props = defineProps<{
   sticker: Sticker
 }>();
 
 const emit = defineEmits<{
-  'toggle-collect': []
+  'view-details': [sticker: Sticker]
 }>();
 
-const getRarityColor = (rarity?: string) => { // Adicionei a ? aqui também
-  if (!rarity) return 'medium'; // Se não tiver raridade, usa a cor padrão
+const getRarityColor = (rarity?: string) => {
+  if (!rarity) return 'medium';
 
   switch (rarity.toLowerCase()) {
     case 'rara': return 'warning';
@@ -44,9 +61,8 @@ const getRarityColor = (rarity?: string) => { // Adicionei a ? aqui também
   }
 };
 
-
-const handleToggle = () => {
-  emit('toggle-collect');
+const handleCardClick = () => {
+  emit('view-details', props.sticker);
 };
 </script>
 
@@ -59,7 +75,7 @@ const handleToggle = () => {
 }
 
 .sticker-image {
-  width: 25%;
+  width: 100%;
   height: 150px;
   object-fit: cover;
   border-radius: 8px 8px 0 0;
@@ -69,6 +85,7 @@ const handleToggle = () => {
   padding: 12px;
   text-align: center;
   width: 100%;
+  position: relative; /* Para posicionar o ícone de favorito */
 }
 
 .sticker-info h3 {
@@ -87,6 +104,14 @@ const handleToggle = () => {
   flex-direction: column;
   gap: 5px;
   margin-top: 10px;
+  align-items: center;
+}
+
+.favorite-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 1.5em;
 }
 
 ion-card {

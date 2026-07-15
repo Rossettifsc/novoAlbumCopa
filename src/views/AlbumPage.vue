@@ -1,106 +1,133 @@
 <template>
   <ion-page>
-    <AppHeader title="Meu Álbum" show-logout @logout="handleLogout" />
-    
-    <ion-content>
-      <ion-card class="ion-margin">
-        <ion-card-content>
-          <ion-grid>
-            <ion-row>
-              <ion-col size="6">
-                <ion-text>
-                  <h3>Total</h3>
-                  <p class="stat-number">{{ totalStickers }}</p>
-                </ion-text>
-              </ion-col>
-              <ion-col size="6">
-                <ion-text>
-                  <h3>Coletadas</h3>
-                  <p class="stat-number">{{ collectedStickersCount }}</p>
-                </ion-text>
-              </ion-col>
-            </ion-row>
-          </ion-grid>
-          <ion-progress-bar :value="totalStickers > 0 ? collectedStickersCount / totalStickers : 0"></ion-progress-bar>
-        </ion-card-content>
-      </ion-card>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Álbum da Copa</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content :fullscreen="true">
+      <div class="album-header ion-padding">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>Progresso do Álbum</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-item>
+              <ion-label>Total de Figurinhas:</ion-label>
+              <ion-badge color="primary">{{ totalStickers }}</ion-badge>
+            </ion-item>
+            <ion-item>
+              <ion-label>Figurinhas Coletadas:</ion-label>
+              <ion-badge color="success">{{ collectedStickersCount }}</ion-badge>
+            </ion-item>
+            <ion-progress-bar :value="completionPercentage / 100"></ion-progress-bar>
+            <ion-text class="ion-text-center ion-margin-top">
+              <p>{{ completionPercentage.toFixed(2) }}% Completo</p>
+            </ion-text>
+          </ion-card-content>
+        </ion-card>
 
-      <ion-item lines="none" class="ion-margin">
-        <ion-label>Filtro:</ion-label>
-        <ion-select v-model="filterType" @ionChange="updateFilter">
-          <ion-select-option value="all">Todas</ion-select-option>
-          <ion-select-option value="collected">Coletadas</ion-select-option>
-          <ion-select-option value="pending">Pendentes</ion-select-option>
-        </ion-select>
-      </ion-item>
+        <ion-segment :value="filterType" @ionChange="setFilter($event.detail.value)" class="ion-margin-top">
+          <ion-segment-button value="all">
+            <ion-label>Todas</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="collected">
+            <ion-label>Coletadas</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="pending">
+            <ion-label>Faltantes</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="favorite">
+            <ion-label>Favoritas</ion-label>
+          </ion-segment-button>
+        </ion-segment>
 
-      <ion-searchbar 
-        placeholder="Buscar por nome ou seleção" 
-        :value="searchQuery"
-        @ionInput="updateSearch">
-      </ion-searchbar>
+        <ion-searchbar
+          :value="searchQuery"
+          @ionInput="pesquisar($event.target.value)"
+          placeholder="Buscar figurinhas..."
+        ></ion-searchbar>
+      </div>
 
-      <!-- StickerList agora recebe filteredStickers que definimos no useAlbum -->
-      <StickerList :stickers="filteredStickers" @toggle-collect="toggleCollect" />
+      <StickerList :stickers="stickers" @view-details="openStickerDetailModal" />
+
+      <StickerDetailModal
+        :is-open="isModalOpen"
+        :sticker="selectedSticker"
+        @close="closeStickerDetailModal"
+      />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { 
-  IonPage, IonContent, IonCard, IonCardContent, IonGrid, IonRow, 
-  IonCol, IonText, IonItem, IonLabel, IonSelect, IonSelectOption, 
-  IonSearchbar, IonProgressBar 
+import { ref, onMounted } from 'vue';
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonItem,
+  IonLabel,
+  IonBadge,
+  IonProgressBar,
+  IonSegment,
+  IonSegmentButton,
+  IonSearchbar,
 } from '@ionic/vue';
-
-import { useAuth } from '../composables/useAuth';
-import { useAlbum } from '../composables/useAlbum';
-import AppHeader from '@/composables/AppHeader.vue'; 
 import StickerList from '@/composables/StickerList.vue';
+import StickerDetailModal from '@/components/StickerDetailModal.vue';
+import { useAlbum } from '@/composables/useAlbum';
 
-const router = useRouter();
-const { logout } = useAuth();
 const { 
-  filteredStickers, 
-  totalStickers, 
-  collectedStickersCount, 
-  marcarColetada, 
-  pesquisar, 
-  setFilter, 
-  filterType, 
+  stickers,
+  totalStickers,
+  collectedStickersCount,
+  completionPercentage,
   loadStickers,
+  pesquisar,
+  setFilter,
+  filterType,
   searchQuery
 } = useAlbum();
 
-onMounted(async () => {
-  await loadStickers();
+const isModalOpen = ref(false);
+const selectedSticker = ref(null);
+
+const openStickerDetailModal = (sticker: any) => {
+  selectedSticker.value = sticker;
+  isModalOpen.value = true;
+};
+
+const closeStickerDetailModal = () => {
+  isModalOpen.value = false;
+  selectedSticker.value = null;
+  loadStickers(); // Recarrega as figurinhas para refletir as mudanças no modal
+};
+
+onMounted(() => {
+  loadStickers();
 });
-
-const updateSearch = (event: any) => {
-  pesquisar(event.detail.value || '');
-};
-
-const updateFilter = () => {
-  setFilter(filterType.value);
-};
-
-const toggleCollect = async (id: number) => {
-  await marcarColetada(id);
-};
-
-const handleLogout = () => {
-  logout();
-  router.push('/login');
-};
 </script>
 
 <style scoped>
-.stat-number {
-  font-size: 32px;
-  font-weight: bold;
-  color: #3880ff;
-  margin: 0;
+.album-header {
+  background: var(--ion-color-light);
+  padding-bottom: 0;
+}
+
+ion-card {
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+}
+
+ion-segment {
+  margin-bottom: 10px;
 }
 </style>

@@ -37,6 +37,8 @@ async function ensureDatabase() {
         photo TEXT,
         raridade TEXT DEFAULT 'comum',
         collected INTEGER DEFAULT 0,
+        favorite INTEGER DEFAULT 0, /* NOVA COLUNA */
+        collected_at DATETIME,     /* NOVA COLUNA */
         user_id INTEGER,
         FOREIGN KEY(user_id) REFERENCES usuarios(id)
       );
@@ -118,8 +120,8 @@ export async function syncInitialStickers(userId: number) {
     for (const s of initialStickers) {
       const raridade = s.id % 5 === 0 ? 'rara' : (s.id % 3 === 0 ? 'brilhante' : 'comum')
       await getDB().run(
-        'INSERT INTO figurinhas (id, nome, team, photo, raridade, collected, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [s.id, s.name, s.team, s.photo, raridade, 0, userId]
+        'INSERT INTO figurinhas (id, nome, team, photo, raridade, collected, favorite, collected_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [s.id, s.name, s.team, s.photo, raridade, 0, 0, null, userId] /* Adicionado favorite e collected_at */
       )
     }
   }
@@ -132,6 +134,7 @@ export async function listFigurinhas(userId: number, filter: string = 'all', sea
 
   if (filter === 'collected') query += ' AND collected = 1'
   else if (filter === 'pending') query += ' AND collected = 0'
+  else if (filter === 'favorite') query += ' AND favorite = 1' /* NOVO FILTRO */
 
   if (search) {
     query += ' AND (nome LIKE ? OR team LIKE ?)'
@@ -144,8 +147,83 @@ export async function listFigurinhas(userId: number, filter: string = 'all', sea
 
 export async function toggleSticker(id: number, userId: number) {
   await ensureDatabase()
-  await getDB().run('UPDATE figurinhas SET collected = 1 - collected WHERE id = ? AND user_id = ?', [id, userId])
+  const currentSticker = await getDB().query('SELECT collected FROM figurinhas WHERE id = ? AND user_id = ?', [id, userId])
+  const isCollected = currentSticker.values?.[0]?.collected === 1
+  const newCollectedState = isCollected ? 0 : 1
+  const collectedAt = isCollected ? null : new Date().toISOString() // Define collected_at apenas se for coletar
+
+  await getDB().run('UPDATE figurinhas SET collected = ?, collected_at = ? WHERE id = ? AND user_id = ?', [newCollectedState, collectedAt, id, userId])
   await checkAndGrantAchievements(userId)
+}
+
+export async function toggleFavorite(id: number, userId: number) { /* NOVA FUNÇÃO */
+  await ensureDatabase()
+  await getDB().run('UPDATE figurinhas SET favorite = 1 - favorite WHERE id = ? AND user_id = ?', [id, userId])
+}
+
+export async function getStickerDetails(id: number, userId: number) { /* NOVA FUNÇÃO */
+  await ensureDatabase()
+  const result = await getDB().query('SELECT * FROM figurinhas WHERE id = ? AND user_id = ?', [id, userId])
+  return result.values?.[0] || null
+}
+
+export async function listLastCollectedStickers(userId: number, limit: number = 10) { /* NOVA FUNÇÃO */
+  await ensureDatabase()
+  const result = await getDB().query('SELECT * FROM figurinhas WHERE user_id = ? AND collected = 1 AND collected_at IS NOT NULL ORDER BY collected_at DESC LIMIT ?', [userId, limit])
+  return result.values || []
+}
+
+export async function getAlbumStatistics(userId: number) { /* NOVA FUNÇÃO */
+  await ensureDatabase()
+  const result = await getDB().query(`
+    SELECT 
+      COUNT(*) AS totalFigurinhas,
+      SUM(CASE WHEN collected = 1 THEN 1 ELSE 0 END) AS totalColetadas,
+      SUM(CASE WHEN collected = 0 THEN 1 ELSE 0 END) AS totalFaltantes,
+      SUM(CASE WHEN raridade = 'rara' AND collected = 1 THEN 1 ELSE 0 END) AS rarasColetadas,
+      SUM(CASE WHEN raridade = 'brilhante' AND collected = 1 THEN 1 ELSE 0 END) AS brilhantesColetadas
+    FROM figurinhas
+    WHERE user_id = ?
+  `, [userId])
+  const stats = result.values?.[0] || {}
+
+  const totalFigurinhas = stats.totalFigurinhas || 0
+  const totalColetadas = stats.totalColetadas || 0
+  const percentualConclusao = totalFigurinhas > 0 ? (totalColetadas / totalFigurinhas) * 100 : 0
+
+  return {
+    totalFigurinhas,
+    totalColetadas,
+    totalFaltantes: stats.totalFaltantes || 0,
+    rarasColetadas: stats.rarasColetadas || 0,
+    brilhantesColetadas: stats.brilhantesColetadas || 0,
+    percentualConclusao: parseFloat(percentualConclusao.toFixed(2))
+  }
+}
+
+export async function getCollectorRanking(userId: number) { /* NOVA FUNÇÃO */
+  await ensureDatabase()
+  const result = await getDB().query(`
+    SELECT 
+      SUM(CASE WHEN collected = 1 AND raridade = 'comum' THEN 1
+               WHEN collected = 1 AND raridade = 'rara' THEN 5
+               WHEN collected = 1 AND raridade = 'brilhante' THEN 10
+               ELSE 0 END) AS pontuacaoTotal
+    FROM figurinhas
+    WHERE user_id = ?
+  `, [userId])
+  const pontuacaoTotal = result.values?.[0]?.pontuacaoTotal || 0
+
+  let nivel = ''
+  if (pontuacaoTotal >= 501) nivel = 'Diamante'
+  else if (pontuacaoTotal >= 251) nivel = 'Ouro'
+  else if (pontuacaoTotal >= 101) nivel = 'Prata'
+  else nivel = 'Bronze'
+
+  return {
+    pontuacaoTotal,
+    nivel
+  }
 }
 
 /* CONQUISTAS */

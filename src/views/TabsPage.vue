@@ -18,6 +18,11 @@
           <ion-label>Conquistas</ion-label>
         </ion-tab-button>
 
+        <ion-tab-button tab="statistics" href="/tabs/statistics">
+          <ion-icon aria-hidden="true" :icon="statsChart" />
+          <ion-label>Estatísticas</ion-label>
+        </ion-tab-button>
+
         <ion-tab-button tab="tab3" href="/tabs/tab3">
           <ion-icon aria-hidden="true" :icon="person" />
           <ion-label>Perfil</ion-label>
@@ -29,5 +34,5 @@
 
 <script setup lang="ts">
 import { IonTabBar, IonTabButton, IonTabs, IonLabel, IonIcon, IonPage, IonRouterOutlet } from '@ionic/vue';
-import { albums, star, person, trophy } from 'ionicons/icons';
+import { albums, star, person, trophy, statsChart } from 'ionicons/icons'; // Importe statsChart
 </script>

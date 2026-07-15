@@ -2,34 +2,26 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router';
 
+// Importações para o SQLite Web
+import { defineCustomElements as defineSQLiteElements } from '@capacitor-community/sqlite/dist/web';
+import { setupSQLite } from '@capacitor-community/sqlite';
+
+// Define os elementos customizados para o SQLite Web
+defineSQLiteElements(window);
+setupSQLite({
+  sqlite: {
+    // Adicione qualquer configuração específica para web aqui, se necessário
+  },
+  electron: {
+    // Adicione qualquer configuração específica para electron aqui, se necessário
+  }
+});
+
 import { IonicVue } from '@ionic/vue';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
-import '@ionic/vue/css/normalize.css';
-import '@ionic/vue/css/structure.css';
-import '@ionic/vue/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
-import '@ionic/vue/css/padding.css';
-import '@ionic/vue/css/float-elements.css';
-import '@ionic/vue/css/text-alignment.css';
-import '@ionic/vue/css/text-transformation.css';
-import '@ionic/vue/css/flex-utils.css';
-import '@ionic/vue/css/display.css';
-
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* @import '@ionic/vue/css/palettes/dark.always.css'; */
-/* @import '@ionic/vue/css/palettes/dark.class.css'; */
-import '@ionic/vue/css/palettes/dark.system.css';
+// ... outros imports CSS
 
 /* Theme variables */
 import './theme/variables.css';
@@ -40,4 +32,13 @@ const app = createApp(App)
 
 router.isReady().then(() => {
   app.mount('#app');
+});
+
+// Inicializa o banco de dados após a montagem do aplicativo
+// Isso garante que o driver web esteja pronto antes das operações de banco de dados
+import { initDatabase } from './services/database';
+initDatabase().then(() => {
+  console.log('Banco de dados inicializado de main.ts');
+}).catch(e => {
+  console.error('Falha ao inicializar o banco de dados de main.ts:', e);
 });
