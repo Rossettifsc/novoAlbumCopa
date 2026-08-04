@@ -79,6 +79,60 @@ async function ensureSqlJsDatabase() {
   }
 }
 
+async function migrateFigurinhasSchema() {
+  const tableInfo = await db?.query('PRAGMA table_info(figurinhas)')
+  const columns = (tableInfo?.values || []).map((column: any) => column.name)
+
+  if (columns.includes('sticker_id')) {
+    return
+  }
+
+  await db?.run(`
+    CREATE TABLE figurinhas_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sticker_id INTEGER NOT NULL,
+      nome TEXT NOT NULL,
+      team TEXT NOT NULL,
+      photo TEXT,
+      raridade TEXT DEFAULT 'comum',
+      collected INTEGER DEFAULT 0,
+      favorite INTEGER DEFAULT 0,
+      collected_at DATETIME,
+      user_id INTEGER,
+      UNIQUE(user_id, sticker_id),
+      FOREIGN KEY(user_id) REFERENCES usuarios(id)
+    );
+  `)
+
+  await db?.run(`
+    INSERT INTO figurinhas_new (
+      sticker_id,
+      nome,
+      team,
+      photo,
+      raridade,
+      collected,
+      favorite,
+      collected_at,
+      user_id
+    )
+    SELECT
+      id,
+      nome,
+      team,
+      photo,
+      raridade,
+      collected,
+      favorite,
+      collected_at,
+      user_id
+    FROM figurinhas;
+  `)
+
+  await db?.run('DROP TABLE figurinhas;')
+  await db?.run('ALTER TABLE figurinhas_new RENAME TO figurinhas;')
+}
+
 async function ensureDatabase() {
   if (initialized && db) return
 
@@ -103,9 +157,12 @@ async function ensureDatabase() {
       );
     `)
 
+    await migrateFigurinhasSchema()
+
     await db.execute(`
       CREATE TABLE IF NOT EXISTS figurinhas (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sticker_id INTEGER NOT NULL,
         nome TEXT NOT NULL,
         team TEXT NOT NULL,
         photo TEXT,
@@ -114,6 +171,7 @@ async function ensureDatabase() {
         favorite INTEGER DEFAULT 0,
         collected_at DATETIME,
         user_id INTEGER,
+        UNIQUE(user_id, sticker_id),
         FOREIGN KEY(user_id) REFERENCES usuarios(id)
       );
     `)
@@ -192,7 +250,7 @@ export async function syncInitialStickers(userId: number) {
     for (const s of initialStickers) {
       const raridade = s.id % 5 === 0 ? 'rara' : (s.id % 3 === 0 ? 'brilhante' : 'comum')
       await getDB().run(
-        'INSERT INTO figurinhas (id, nome, team, photo, raridade, collected, favorite, collected_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO figurinhas (sticker_id, nome, team, photo, raridade, collected, favorite, collected_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [s.id, s.name, s.team, s.photo, raridade, 0, 0, null, userId]
       )
     }
@@ -201,7 +259,7 @@ export async function syncInitialStickers(userId: number) {
 
 export async function listFigurinhas(userId: number, filter: string = 'all', search: string = '') {
   await ensureDatabase()
-  let query = 'SELECT * FROM figurinhas WHERE user_id = ?'
+  let query = 'SELECT id as row_id, sticker_id as id, nome, team, photo, raridade, collected, favorite, collected_at, user_id FROM figurinhas WHERE user_id = ?'
   const params: any[] = [userId]
 
   if (filter === 'collected') query += ' AND collected = 1'
@@ -219,23 +277,23 @@ export async function listFigurinhas(userId: number, filter: string = 'all', sea
 
 export async function toggleSticker(id: number, userId: number) {
   await ensureDatabase()
-  const currentSticker = await getDB().query('SELECT collected FROM figurinhas WHERE id = ? AND user_id = ?', [id, userId])
+  const currentSticker = await getDB().query('SELECT collected FROM figurinhas WHERE sticker_id = ? AND user_id = ?', [id, userId])
   const isCollected = currentSticker.values?.[0]?.collected === 1
   const newCollectedState = isCollected ? 0 : 1
   const collectedAt = isCollected ? null : new Date().toISOString()
 
-  await getDB().run('UPDATE figurinhas SET collected = ?, collected_at = ? WHERE id = ? AND user_id = ?', [newCollectedState, collectedAt, id, userId])
+  await getDB().run('UPDATE figurinhas SET collected = ?, collected_at = ? WHERE sticker_id = ? AND user_id = ?', [newCollectedState, collectedAt, id, userId])
   await checkAndGrantAchievements(userId)
 }
 
 export async function toggleFavorite(id: number, userId: number) {
   await ensureDatabase()
-  await getDB().run('UPDATE figurinhas SET favorite = 1 - favorite WHERE id = ? AND user_id = ?', [id, userId])
+  await getDB().run('UPDATE figurinhas SET favorite = 1 - favorite WHERE sticker_id = ? AND user_id = ?', [id, userId])
 }
 
 export async function getStickerDetails(id: number, userId: number) {
   await ensureDatabase()
-  const result = await getDB().query('SELECT * FROM figurinhas WHERE id = ? AND user_id = ?', [id, userId])
+  const result = await getDB().query('SELECT id as row_id, sticker_id as id, nome, team, photo, raridade, collected, favorite, collected_at, user_id FROM figurinhas WHERE sticker_id = ? AND user_id = ?', [id, userId])
   return result.values?.[0] || null
 }
 
@@ -299,28 +357,29 @@ export async function getCollectorRanking(userId: number) {
 }
 
 /* CONQUISTAS */
-async function checkAndGrantAchievements(userId: number) {
+export async function checkAndGrantAchievements(userId: number) {
+  await ensureDatabase()
   const stats = await getDB().query(`
     SELECT 
-      count(*) as total,
-      sum(case when raridade = 'rara' and collected = 1 then 1 else 0 end) as raras,
-      sum(case when raridade = 'brilhante' and collected = 1 then 1 else 0 end) as brilhantes,
-      sum(case when collected = 1 then 1 else 0 end) as coletadas
+      COALESCE(COUNT(*), 0) AS total,
+      COALESCE(SUM(CASE WHEN raridade = 'rara' AND collected = 1 THEN 1 ELSE 0 END), 0) AS raras,
+      COALESCE(SUM(CASE WHEN raridade = 'brilhante' AND collected = 1 THEN 1 ELSE 0 END), 0) AS brilhantes,
+      COALESCE(SUM(CASE WHEN collected = 1 THEN 1 ELSE 0 END), 0) AS coletadas
     FROM figurinhas WHERE user_id = ?
   `, [userId])
 
-  const s = stats.values?.[0]
+  const s = stats.values?.[0] || { total: 0, raras: 0, brilhantes: 0, coletadas: 0 }
   const achievements = await getDB().query('SELECT * FROM achievements')
 
   for (const ach of achievements.values || []) {
     let reached = false
-    if (ach.tipo === 'total' && s.coletadas >= ach.valor_requisito) reached = true
-    if (ach.tipo === 'rara' && s.raras >= ach.valor_requisito) reached = true
-    if (ach.tipo === 'brilhante' && s.brilhantes >= ach.valor_requisito) reached = true
+    if (ach.tipo === 'total' && Number(s.coletadas) >= Number(ach.valor_requisito)) reached = true
+    if (ach.tipo === 'rara' && Number(s.raras) >= Number(ach.valor_requisito)) reached = true
+    if (ach.tipo === 'brilhante' && Number(s.brilhantes) >= Number(ach.valor_requisito)) reached = true
 
     if (reached) {
       const owned = await getDB().query('SELECT id FROM user_achievements WHERE user_id = ? AND achievement_id = ?', [userId, ach.id])
-      if (owned.values?.length === 0) {
+      if ((owned.values?.length ?? 0) === 0) {
         await getDB().run('INSERT INTO user_achievements (user_id, achievement_id, data_desbloqueio) VALUES (?, ?, ?)',
           [userId, ach.id, new Date().toISOString()])
       }

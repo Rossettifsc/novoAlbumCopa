@@ -32,10 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { 
   IonPage, IonContent, IonGrid, IonRow, IonCol, IonCard, 
-  IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonBadge 
+  IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonBadge,
+  onIonViewWillEnter
 } from '@ionic/vue';
 import { star, medal, trophy, diamond, sunny, lockClosed } from 'ionicons/icons';
 import AppHeader from '@/composables/AppHeader.vue';
@@ -61,8 +62,9 @@ const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('pt-BR');
 };
 
-onMounted(loadAchievements);
-</script>
+onMounted(loadAchievements);onIonViewWillEnter(loadAchievements);watch(user, () => {
+  loadAchievements();
+}, { immediate: true });</script>
 
 <style scoped>
 .header-container {
