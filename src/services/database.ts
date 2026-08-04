@@ -3,22 +3,97 @@ import {
   SQLiteConnection,
   SQLiteDBConnection
 } from '@capacitor-community/sqlite'
+import { Capacitor } from '@capacitor/core'
+import initSqlJs from 'sql.js'
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
 import { initialStickers } from '../data/stickers'
 
 const dbName = 'appdata'
-let db: SQLiteDBConnection | null = null
+let db: SQLiteDBConnection | BrowserSqlDb | null = null
 let initialized = false
 const sqliteConnection = new SQLiteConnection(CapacitorSQLite)
+let sqlJsDatabase: any = null
+
+type BrowserSqlDb = {
+  execute: (sql: string) => Promise<void>
+  run: (sql: string, params?: any[]) => Promise<void>
+  query: (sql: string, params?: any[]) => Promise<{ values?: any[] }>
+}
+
+function createBrowserDb(): BrowserSqlDb {
+  return {
+    async execute(sql: string) {
+      if (!sqlJsDatabase) throw new Error('Banco web não inicializado')
+      sqlJsDatabase.exec(sql)
+      await persistBrowserDatabase()
+    },
+    async run(sql: string, params: any[] = []) {
+      if (!sqlJsDatabase) throw new Error('Banco web não inicializado')
+      const statement = sqlJsDatabase.prepare(sql)
+      if (params.length > 0) {
+        statement.bind(params)
+      }
+      statement.step()
+      statement.free()
+      await persistBrowserDatabase()
+    },
+    async query(sql: string, params: any[] = []) {
+      if (!sqlJsDatabase) throw new Error('Banco web não inicializado')
+      const statement = sqlJsDatabase.prepare(sql)
+      if (params.length > 0) {
+        statement.bind(params)
+      }
+
+      const values: any[] = []
+      while (statement.step()) {
+        values.push(statement.getAsObject())
+      }
+      statement.free()
+
+      return { values }
+    }
+  }
+}
+
+async function persistBrowserDatabase() {
+  if (!sqlJsDatabase || Capacitor.getPlatform() !== 'web') return
+  const binary = sqlJsDatabase.export() as Uint8Array
+  const binaryString = Array.from(binary).map((byte: number) => String.fromCharCode(byte)).join('')
+  localStorage.setItem(dbName, btoa(binaryString))
+}
+
+async function ensureSqlJsDatabase() {
+  if (sqlJsDatabase) return
+
+  const SQL = await initSqlJs({
+    locateFile: () => sqlWasmUrl
+  })
+
+  const storedDb = localStorage.getItem(dbName)
+  if (storedDb) {
+    const binaryString = atob(storedDb)
+    const bytes = Uint8Array.from(binaryString, (char) => char.charCodeAt(0))
+    sqlJsDatabase = new SQL.Database(bytes)
+  } else {
+    sqlJsDatabase = new SQL.Database()
+  }
+}
 
 async function ensureDatabase() {
   if (initialized && db) return
-  try {
-    if (!db) {
-      db = await sqliteConnection.createConnection(dbName, false, 'no-encryption', 1, false)
-    }
-    await db.open()
 
-    // Tabela de Usuários
+  try {
+    if (Capacitor.getPlatform() === 'web') {
+      await ensureSqlJsDatabase()
+      db = createBrowserDb()
+    } else {
+      if (!db) {
+        db = await sqliteConnection.createConnection(dbName, false, 'no-encryption', 1, false)
+      }
+      const nativeDb = db as SQLiteDBConnection
+      await nativeDb.open()
+    }
+
     await db.execute(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +103,6 @@ async function ensureDatabase() {
       );
     `)
 
-    // Tabela de Figurinhas
     await db.execute(`
       CREATE TABLE IF NOT EXISTS figurinhas (
         id INTEGER PRIMARY KEY,
@@ -37,14 +111,13 @@ async function ensureDatabase() {
         photo TEXT,
         raridade TEXT DEFAULT 'comum',
         collected INTEGER DEFAULT 0,
-        favorite INTEGER DEFAULT 0, /* NOVA COLUNA */
-        collected_at DATETIME,     /* NOVA COLUNA */
+        favorite INTEGER DEFAULT 0,
+        collected_at DATETIME,
         user_id INTEGER,
         FOREIGN KEY(user_id) REFERENCES usuarios(id)
       );
     `)
 
-    // Tabela de Conquistas (Achievements)
     await db.execute(`
       CREATE TABLE IF NOT EXISTS achievements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +129,6 @@ async function ensureDatabase() {
       );
     `)
 
-    // Tabela de Conquistas do Usuário
     await db.execute(`
       CREATE TABLE IF NOT EXISTS user_achievements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,9 +140,8 @@ async function ensureDatabase() {
       );
     `)
 
-    // Inserir conquistas iniciais se não existirem
     const checkAchiv = await db.query('SELECT count(*) as count FROM achievements')
-    if (checkAchiv.values?.[0].count === 0) {
+    if ((checkAchiv.values?.[0]?.count ?? 0) === 0) {
       const initialAchievements = [
         ['Primeira Figurinha', 'Desbloquear ao coletar a primeira figurinha.', 'star', 'total', 1],
         ['Iniciante', 'Coletar 10 figurinhas.', 'medal', 'total', 10],
@@ -78,6 +149,7 @@ async function ensureDatabase() {
         ['Caçador de Raras', 'Coletar 5 figurinhas raras.', 'diamond', 'rara', 5],
         ['Mestre das Brilhantes', 'Coletar 10 figurinhas brilhantes.', 'sunny', 'brilhante', 10]
       ]
+
       for (const ach of initialAchievements) {
         await db.run('INSERT INTO achievements (nome, descricao, icone, tipo, valor_requisito) VALUES (?, ?, ?, ?, ?)', ach)
       }
@@ -116,12 +188,12 @@ export async function realizarLogin(login: string, senha: string) {
 export async function syncInitialStickers(userId: number) {
   await ensureDatabase()
   const check = await getDB().query('SELECT count(*) as count FROM figurinhas WHERE user_id = ?', [userId])
-  if (check.values?.[0].count === 0) {
+  if ((check.values?.[0]?.count ?? 0) === 0) {
     for (const s of initialStickers) {
       const raridade = s.id % 5 === 0 ? 'rara' : (s.id % 3 === 0 ? 'brilhante' : 'comum')
       await getDB().run(
         'INSERT INTO figurinhas (id, nome, team, photo, raridade, collected, favorite, collected_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [s.id, s.name, s.team, s.photo, raridade, 0, 0, null, userId] /* Adicionado favorite e collected_at */
+        [s.id, s.name, s.team, s.photo, raridade, 0, 0, null, userId]
       )
     }
   }
@@ -134,7 +206,7 @@ export async function listFigurinhas(userId: number, filter: string = 'all', sea
 
   if (filter === 'collected') query += ' AND collected = 1'
   else if (filter === 'pending') query += ' AND collected = 0'
-  else if (filter === 'favorite') query += ' AND favorite = 1' /* NOVO FILTRO */
+  else if (filter === 'favorite') query += ' AND favorite = 1'
 
   if (search) {
     query += ' AND (nome LIKE ? OR team LIKE ?)'
@@ -150,30 +222,30 @@ export async function toggleSticker(id: number, userId: number) {
   const currentSticker = await getDB().query('SELECT collected FROM figurinhas WHERE id = ? AND user_id = ?', [id, userId])
   const isCollected = currentSticker.values?.[0]?.collected === 1
   const newCollectedState = isCollected ? 0 : 1
-  const collectedAt = isCollected ? null : new Date().toISOString() // Define collected_at apenas se for coletar
+  const collectedAt = isCollected ? null : new Date().toISOString()
 
   await getDB().run('UPDATE figurinhas SET collected = ?, collected_at = ? WHERE id = ? AND user_id = ?', [newCollectedState, collectedAt, id, userId])
   await checkAndGrantAchievements(userId)
 }
 
-export async function toggleFavorite(id: number, userId: number) { /* NOVA FUNÇÃO */
+export async function toggleFavorite(id: number, userId: number) {
   await ensureDatabase()
   await getDB().run('UPDATE figurinhas SET favorite = 1 - favorite WHERE id = ? AND user_id = ?', [id, userId])
 }
 
-export async function getStickerDetails(id: number, userId: number) { /* NOVA FUNÇÃO */
+export async function getStickerDetails(id: number, userId: number) {
   await ensureDatabase()
   const result = await getDB().query('SELECT * FROM figurinhas WHERE id = ? AND user_id = ?', [id, userId])
   return result.values?.[0] || null
 }
 
-export async function listLastCollectedStickers(userId: number, limit: number = 10) { /* NOVA FUNÇÃO */
+export async function listLastCollectedStickers(userId: number, limit: number = 10) {
   await ensureDatabase()
   const result = await getDB().query('SELECT * FROM figurinhas WHERE user_id = ? AND collected = 1 AND collected_at IS NOT NULL ORDER BY collected_at DESC LIMIT ?', [userId, limit])
   return result.values || []
 }
 
-export async function getAlbumStatistics(userId: number) { /* NOVA FUNÇÃO */
+export async function getAlbumStatistics(userId: number) {
   await ensureDatabase()
   const result = await getDB().query(`
     SELECT 
@@ -201,7 +273,7 @@ export async function getAlbumStatistics(userId: number) { /* NOVA FUNÇÃO */
   }
 }
 
-export async function getCollectorRanking(userId: number) { /* NOVA FUNÇÃO */
+export async function getCollectorRanking(userId: number) {
   await ensureDatabase()
   const result = await getDB().query(`
     SELECT 
@@ -236,10 +308,10 @@ async function checkAndGrantAchievements(userId: number) {
       sum(case when collected = 1 then 1 else 0 end) as coletadas
     FROM figurinhas WHERE user_id = ?
   `, [userId])
-  
+
   const s = stats.values?.[0]
   const achievements = await getDB().query('SELECT * FROM achievements')
-  
+
   for (const ach of achievements.values || []) {
     let reached = false
     if (ach.tipo === 'total' && s.coletadas >= ach.valor_requisito) reached = true
@@ -249,7 +321,7 @@ async function checkAndGrantAchievements(userId: number) {
     if (reached) {
       const owned = await getDB().query('SELECT id FROM user_achievements WHERE user_id = ? AND achievement_id = ?', [userId, ach.id])
       if (owned.values?.length === 0) {
-        await getDB().run('INSERT INTO user_achievements (user_id, achievement_id, data_desbloqueio) VALUES (?, ?, ?)', 
+        await getDB().run('INSERT INTO user_achievements (user_id, achievement_id, data_desbloqueio) VALUES (?, ?, ?)',
           [userId, ach.id, new Date().toISOString()])
       }
     }
@@ -259,7 +331,7 @@ async function checkAndGrantAchievements(userId: number) {
 export async function listUserAchievements(userId: number) {
   await ensureDatabase()
   const query = `
-    SELECT a.*, ua.data_desbloqueio, 
+    SELECT a.*, ua.data_desbloqueio,
     CASE WHEN ua.id IS NOT NULL THEN 1 ELSE 0 END as unlocked
     FROM achievements a
     LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?

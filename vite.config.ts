@@ -16,6 +16,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    mimeTypes: {
+      '.wasm': 'application/wasm',
+    },
+  },
+  preview: {
+    mimeTypes: {
+      '.wasm': 'application/wasm',
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom'
