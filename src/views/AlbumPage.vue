@@ -27,7 +27,7 @@
           </ion-card-content>
         </ion-card>
 
-        <ion-segment :value="filterType" @ionChange="setFilter($event.detail.value)" class="ion-margin-top">
+        <ion-segment :value="filterType" @ionChange="handleFilterChange($event)" class="ion-margin-top">
           <ion-segment-button value="all">
             <ion-label>Todas</ion-label>
           </ion-segment-button>
@@ -44,7 +44,7 @@
 
         <ion-searchbar
           :value="searchQuery"
-          @ionInput="pesquisar($event.target.value)"
+          @ionInput="pesquisar(($event.target as HTMLIonSearchbarElement)?.value ?? '')"
           placeholder="Buscar figurinhas..."
         ></ion-searchbar>
       </div>
@@ -97,7 +97,14 @@ const {
 } = useAlbum();
 
 const isModalOpen = ref(false);
-const selectedSticker = ref(null);
+const selectedSticker = ref<any | null>(null);
+
+const handleFilterChange = (event: CustomEvent) => {
+  const value = event.detail?.value;
+  if (value) {
+    setFilter(value as 'all' | 'collected' | 'pending' | 'favorite');
+  }
+};
 
 const openStickerDetailModal = (sticker: any) => {
   selectedSticker.value = sticker;

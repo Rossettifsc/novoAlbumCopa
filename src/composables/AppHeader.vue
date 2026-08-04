@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start" v-if="showBackButton">
-        <ion-back-button default-href="/tabs/album"></ion-back-button>
+        <ion-back-button default-href="/tabs/tab1"></ion-back-button>
       </ion-buttons>
       <ion-title>{{ title }}</ion-title>
       <ion-buttons slot="end" v-if="showLogout">

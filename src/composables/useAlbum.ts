@@ -98,10 +98,11 @@ export function useAlbum() {
     collectorLevel,
     loadStickers,
     marcarColetada,
-    marcarFavorita, // Exporta nova função
+    marcarFavorita,
     pesquisar,
     setFilter,
     filterType,
+    searchQuery,
     albumStatistics,
     collectorRanking
   };
