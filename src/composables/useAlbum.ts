@@ -14,8 +14,6 @@ interface Sticker {
 }
 
 const stickers = ref<Sticker[]>([]);
-const filterType = ref<'all' | 'collected' | 'pending' | 'favorite'>('all');
-const searchQuery = ref('');
 const albumStatistics = ref<any>(null);
 const collectorRanking = ref<any>(null);
 const lastCollectedStickers = ref<any[]>([]);
@@ -23,10 +21,14 @@ const lastCollectedStickers = ref<any[]>([]);
 export function useAlbum() {
   const { user } = useAuth();
 
-  const loadStickers = async () => {
+  // Estados globais para a aba do Álbum (filtragem)
+  const filterType = ref<'all' | 'collected' | 'pending' | 'favorite'>('all');
+  const searchQuery = ref('');
+
+  const loadStickers = async (filter: 'all' | 'collected' | 'pending' | 'favorite' = 'all', search: string = '') => {
     if (user.value?.id) {
-      // Correção da linha 28: Cast do retorno para garantir compatibilidade de tipos
-      stickers.value = await listFigurinhas(user.value.id, filterType.value, searchQuery.value) as Sticker[];
+      // Correção: forçar a busca pelo banco com o filtro atual
+      stickers.value = await listFigurinhas(user.value.id, filter, search) as Sticker[];
       await loadStatistics();
       await loadRanking();
       await loadLastCollectedStickers();
@@ -71,30 +73,32 @@ export function useAlbum() {
   const marcarColetada = async (id: number) => {
     if (user.value?.id) {
       await toggleSticker(id, user.value.id);
-      await loadStickers();
+      // Força recarregar a lista do banco (sempre voltando para o estado atual do álbum)
+      await loadStickers(filterType.value, searchQuery.value);
     }
   };
 
   const marcarFavorita = async (id: number) => {
     if (user.value?.id) {
       await toggleFavorite(id, user.value.id);
-      await loadStickers();
+      await loadStickers(filterType.value, searchQuery.value);
     }
   };
 
   const pesquisar = (query: string) => {
     searchQuery.value = query;
-    loadStickers();
+    loadStickers(filterType.value, searchQuery.value);
   };
 
   const setFilter = (filter: 'all' | 'collected' | 'pending' | 'favorite') => {
     filterType.value = filter;
-    loadStickers();
+    loadStickers(filterType.value, searchQuery.value);
   };
 
   watch(user, (newVal) => {
     if (newVal?.id) {
-      loadStickers();
+      // Ao carregar, garante que o estado inicial do álbum seja limpo
+      loadStickers('all', '');
     }
   }, { immediate: true });
 

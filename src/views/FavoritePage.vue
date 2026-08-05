@@ -16,6 +16,7 @@
         </ion-card>
       </div>
 
+      <!-- Correção: Passando favoriteStickers para a lista -->
       <StickerList 
         :stickers="favoriteStickers" 
         @view-details="openStickerDetailModal"
@@ -32,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import {
   IonPage,
   IonHeader,
@@ -55,6 +56,7 @@ const isModalOpen = ref(false);
 const selectedSticker = ref<any | null>(null);
 
 const favoriteStickers = computed(() => {
+  // Correção: Filtra localmente apenas as favoritadas do array global de stickers
   return stickers.value.filter(s => s.favorite === 1);
 });
 
@@ -66,19 +68,17 @@ const openStickerDetailModal = (sticker: any) => {
 const closeStickerDetailModal = () => {
   isModalOpen.value = false;
   selectedSticker.value = null;
-  loadStickers();
+  // Correção: Forçar o carregamento limpo do álbum para atualizar as abas
+  loadStickers('all', '');
 };
 
 const handleFavoriteToggle = async (id: number) => {
   await marcarFavorita(id);
 };
 
-onMounted(() => {
-  loadStickers();
-});
-
+// Correção: Ao entrar na aba, sempre forçar o recarregamento limpo
 onIonViewWillEnter(() => {
-  loadStickers();
+  loadStickers('all', '');
 });
 </script>
 

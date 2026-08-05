@@ -25,6 +25,7 @@
         </ion-card>
       </div>
 
+      <!-- Correção: Passando collectedStickers para a lista -->
       <StickerList :stickers="collectedStickers" @view-details="openStickerDetailModal" />
 
       <StickerDetailModal
@@ -37,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import {
   IonPage,
   IonHeader,
@@ -54,12 +55,13 @@ import StickerList from '@/composables/StickerList.vue';
 import StickerDetailModal from '@/components/StickerDetailModal.vue';
 import { useAlbum } from '@/composables/useAlbum';
 
+// Desestruturação limpa
 const { 
-  stickers, 
   totalStickers,
   collectedStickersCount, 
   completionPercentage,
-  loadStickers 
+  loadStickers,
+  marcarColetada
 } = useAlbum();
 
 const isModalOpen = ref(false);
@@ -77,14 +79,15 @@ const openStickerDetailModal = (sticker: any) => {
 const closeStickerDetailModal = () => {
   isModalOpen.value = false;
   selectedSticker.value = null;
-  loadStickers();
+  // Correção: Forçar o carregamento das figurinhas (passando 'all' e string vazia para limpar a busca)
+  loadStickers('all', '');
 };
 
-onMounted(() => {
-  loadStickers();
+// Correção: Ao entrar na aba, sempre resetar o estado de busca e forçar o carregamento completo
+onIonViewWillEnter(() => {
+  loadStickers('all', '');
 });
 
-onIonViewWillEnter(() => {
-  loadStickers();
-});
+// Importação do sticker globalmente no script para a computed property funcionar
+const { stickers } = useAlbum();
 </script>
