@@ -16,7 +16,11 @@
         </ion-card>
       </div>
 
-      <StickerList :stickers="favoriteStickers" @view-details="openStickerDetailModal" />
+      <StickerList 
+        :stickers="favoriteStickers" 
+        @view-details="openStickerDetailModal"
+        @toggle-favorite="handleFavoriteToggle"
+      />
 
       <StickerDetailModal
         :is-open="isModalOpen"
@@ -37,14 +41,15 @@ import {
   IonContent,
   IonCard,
   IonCardContent,
-  IonIcon
+  IonIcon,
+  onIonViewWillEnter
 } from '@ionic/vue';
 import { starOutline } from 'ionicons/icons';
 import StickerList from '@/composables/StickerList.vue';
 import StickerDetailModal from '@/components/StickerDetailModal.vue';
 import { useAlbum } from '@/composables/useAlbum';
 
-const { stickers, loadStickers } = useAlbum();
+const { stickers, loadStickers, marcarFavorita } = useAlbum();
 
 const isModalOpen = ref(false);
 const selectedSticker = ref<any | null>(null);
@@ -64,7 +69,15 @@ const closeStickerDetailModal = () => {
   loadStickers();
 };
 
+const handleFavoriteToggle = async (id: number) => {
+  await marcarFavorita(id);
+};
+
 onMounted(() => {
+  loadStickers();
+});
+
+onIonViewWillEnter(() => {
   loadStickers();
 });
 </script>

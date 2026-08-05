@@ -23,8 +23,8 @@
           <ion-item>
             <ion-label>Coletada:</ion-label>
             <ion-icon
-              :icon="sticker.collected ? checkmarkCircle : closeCircle"
-              :color="sticker.collected ? 'success' : 'danger'"
+              :icon="sticker.collected === 1 ? checkmarkCircle : closeCircle"
+              :color="sticker.collected === 1 ? 'success' : 'danger'"
             ></ion-icon>
           </ion-item>
           <ion-item v-if="sticker.collected_at">
@@ -32,14 +32,14 @@
             <ion-text>{{ formatDate(sticker.collected_at) }}</ion-text>
           </ion-item>
 
-          <ion-button expand="block" :color="sticker.collected ? 'danger' : 'success'" @click="toggleCollected(sticker.id)">
-            <ion-icon slot="start" :icon="sticker.collected ? removeCircle : addCircle"></ion-icon>
-            {{ sticker.collected ? 'Remover da Coleção' : 'Adicionar à Coleção' }}
+          <ion-button expand="block" :color="sticker.collected === 1 ? 'danger' : 'success'" @click="toggleCollected(sticker.id)">
+            <ion-icon slot="start" :icon="sticker.collected === 1 ? removeCircle : addCircle"></ion-icon>
+            {{ sticker.collected === 1 ? 'Remover da Coleção' : 'Adicionar à Coleção' }}
           </ion-button>
 
-          <ion-button expand="block" :color="sticker.favorite ? 'warning' : 'medium'" @click="toggleFavorite(sticker.id)" class="ion-margin-top">
-            <ion-icon slot="start" :icon="sticker.favorite ? star : starOutline"></ion-icon>
-            {{ sticker.favorite ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos' }}
+          <ion-button expand="block" :color="sticker.favorite === 1 ? 'warning' : 'medium'" @click="toggleFavorite(sticker.id)" class="ion-margin-top">
+            <ion-icon slot="start" :icon="sticker.favorite === 1 ? star : starOutline"></ion-icon>
+            {{ sticker.favorite === 1 ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos' }}
           </ion-button>
         </ion-card-content>
       </ion-card>
@@ -82,12 +82,11 @@ const { marcarColetada, marcarFavorita } = useAlbum();
 
 const toggleCollected = async (id: number) => {
   await marcarColetada(id);
-  emit('close'); // Fecha o modal após a ação
+  emit('close');
 };
 
 const toggleFavorite = async (id: number) => {
   await marcarFavorita(id);
-  // Não fecha o modal, permite que o usuário continue interagindo
 };
 
 const rarityColor = computed(() => (raridade: string) => {

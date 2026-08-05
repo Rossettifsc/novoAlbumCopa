@@ -9,8 +9,8 @@ interface Sticker {
   photo: string;
   raridade: string;
   collected: number;
-  favorite: number; // Adicionado
-  collected_at: string; // Adicionado
+  favorite: number;
+  collected_at: string;
 }
 
 const stickers = ref<Sticker[]>([]);
@@ -70,14 +70,14 @@ export function useAlbum() {
   const marcarColetada = async (id: number) => {
     if (user.value?.id) {
       await toggleSticker(id, user.value.id);
-      await loadStickers(); // Recarrega para atualizar a lista e as estatísticas
+      await loadStickers();
     }
   };
 
-  const marcarFavorita = async (id: number) => { // Nova função
+  const marcarFavorita = async (id: number) => {
     if (user.value?.id) {
       await toggleFavorite(id, user.value.id);
-      await loadStickers(); // Recarrega para atualizar a lista e as estatísticas
+      await loadStickers();
     }
   };
 
@@ -86,16 +86,16 @@ export function useAlbum() {
     loadStickers();
   };
 
-  const setFilter = (filter: 'all' | 'collected' | 'pending' | 'favorite') => { // Atualizado
+  const setFilter = (filter: 'all' | 'collected' | 'pending' | 'favorite') => {
     filterType.value = filter;
     loadStickers();
   };
 
-  watch(user, (newVal, oldVal) => {
-    if (newVal?.id && newVal.id !== oldVal?.id) {
+  watch(user, (newVal) => {
+    if (newVal?.id) {
       loadStickers();
     }
-  });
+  }, { immediate: true });
 
   return {
     stickers: filteredStickers,

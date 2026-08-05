@@ -105,6 +105,7 @@ import {
   IonProgressBar,
   IonList,
   IonText,
+  onIonViewWillEnter
 } from '@ionic/vue';
 import { useAlbum } from '@/composables/useAlbum';
 
@@ -125,6 +126,10 @@ const {
 } = useAlbum();
 
 onMounted(() => {
+  loadStickers();
+});
+
+onIonViewWillEnter(() => {
   loadStickers();
 });
 

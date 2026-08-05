@@ -33,7 +33,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'favorites',
-        component: () => import('@/views/FavoritesPage.vue')
+        component: () => import('@/views/FavoritePage.vue')
       },
       {
         path: 'tab3',

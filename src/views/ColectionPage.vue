@@ -47,7 +47,8 @@ import {
   IonCard,
   IonCardContent,
   IonText,
-  IonProgressBar
+  IonProgressBar,
+  onIonViewWillEnter
 } from '@ionic/vue';
 import StickerList from '@/composables/StickerList.vue';
 import StickerDetailModal from '@/components/StickerDetailModal.vue';
@@ -80,6 +81,10 @@ const closeStickerDetailModal = () => {
 };
 
 onMounted(() => {
+  loadStickers();
+});
+
+onIonViewWillEnter(() => {
   loadStickers();
 });
 </script>

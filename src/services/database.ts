@@ -83,19 +83,17 @@ async function migrateFigurinhasSchema() {
   const tableExistsResult = await db?.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'figurinhas'")
   const tableExists = (tableExistsResult?.values?.length ?? 0) > 0
 
-  if (!tableExists) {
-    return
-  }
+  if (!tableExists) return
 
   const tableInfo = await db?.query('PRAGMA table_info(figurinhas)')
   const columns = (tableInfo?.values || []).map((column: any) => column.name)
 
-  if (columns.includes('sticker_id')) {
+  if (columns.includes('sticker_id') && columns.includes('favorite') && columns.includes('collected_at')) {
     return
   }
 
   await db?.run(`
-    CREATE TABLE figurinhas_new (
+    CREATE TABLE IF NOT EXISTS figurinhas_new (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sticker_id INTEGER NOT NULL,
       nome TEXT NOT NULL,
@@ -111,32 +109,22 @@ async function migrateFigurinhasSchema() {
     );
   `)
 
-  await db?.run(`
-    INSERT INTO figurinhas_new (
-      sticker_id,
-      nome,
-      team,
-      photo,
-      raridade,
-      collected,
-      favorite,
-      collected_at,
-      user_id
-    )
-    SELECT
-      id,
-      nome,
-      team,
-      photo,
-      raridade,
-      collected,
-      favorite,
-      collected_at,
-      user_id
-    FROM figurinhas;
-  `)
+  try {
+    const oldData = await db?.query('SELECT * FROM figurinhas')
+    if (oldData?.values) {
+      for (const row of oldData.values) {
+        const stickerId = row.sticker_id || row.id
+        await db?.run(`
+          INSERT OR REPLACE INTO figurinhas_new (sticker_id, nome, team, photo, raridade, collected, favorite, collected_at, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [stickerId, row.nome, row.team, row.photo, row.raridade || 'comum', row.collected || 0, row.favorite || 0, row.collected_at || null, row.user_id])
+      }
+    }
+  } catch (e) {
+    console.log('Erro na migração:', e)
+  }
 
-  await db?.run('DROP TABLE figurinhas;')
+  await db?.run('DROP TABLE IF EXISTS figurinhas;')
   await db?.run('ALTER TABLE figurinhas_new RENAME TO figurinhas;')
 }
 
@@ -275,7 +263,7 @@ export async function listFigurinhas(userId: number, filter: string = 'all', sea
 
   if (search) {
     query += ' AND (nome LIKE ? OR team LIKE ?)'
-    params.push(`%${search}%`, `%${search}%`)
+    params.push(\`%\${search}%\`, \`%\${search}%\`)
   }
 
   const result = await getDB().query(query, params)
@@ -312,7 +300,7 @@ export async function listLastCollectedStickers(userId: number, limit: number = 
 
 export async function getAlbumStatistics(userId: number) {
   await ensureDatabase()
-  const result = await getDB().query(`
+  const result = await getDB().query(\`
     SELECT 
       COUNT(*) AS totalFigurinhas,
       SUM(CASE WHEN collected = 1 THEN 1 ELSE 0 END) AS totalColetadas,
@@ -321,7 +309,7 @@ export async function getAlbumStatistics(userId: number) {
       SUM(CASE WHEN raridade = 'brilhante' AND collected = 1 THEN 1 ELSE 0 END) AS brilhantesColetadas
     FROM figurinhas
     WHERE user_id = ?
-  `, [userId])
+  \`, [userId])
   const stats = result.values?.[0] || {}
 
   const totalFigurinhas = stats.totalFigurinhas || 0
@@ -340,7 +328,7 @@ export async function getAlbumStatistics(userId: number) {
 
 export async function getCollectorRanking(userId: number) {
   await ensureDatabase()
-  const result = await getDB().query(`
+  const result = await getDB().query(\`
     SELECT 
       SUM(CASE WHEN collected = 1 AND raridade = 'comum' THEN 1
                WHEN collected = 1 AND raridade = 'rara' THEN 5
@@ -348,7 +336,7 @@ export async function getCollectorRanking(userId: number) {
                ELSE 0 END) AS pontuacaoTotal
     FROM figurinhas
     WHERE user_id = ?
-  `, [userId])
+  \`, [userId])
 
   const pontuacaoTotal = Number(result.values?.[0]?.pontuacaoTotal || 0)
 
@@ -391,14 +379,14 @@ export async function getCollectorRanking(userId: number) {
 /* CONQUISTAS */
 export async function checkAndGrantAchievements(userId: number) {
   await ensureDatabase()
-  const stats = await getDB().query(`
+  const stats = await getDB().query(\`
     SELECT 
       COALESCE(COUNT(*), 0) AS total,
       COALESCE(SUM(CASE WHEN raridade = 'rara' AND collected = 1 THEN 1 ELSE 0 END), 0) AS raras,
       COALESCE(SUM(CASE WHEN raridade = 'brilhante' AND collected = 1 THEN 1 ELSE 0 END), 0) AS brilhantes,
       COALESCE(SUM(CASE WHEN collected = 1 THEN 1 ELSE 0 END), 0) AS coletadas
     FROM figurinhas WHERE user_id = ?
-  `, [userId])
+  \`, [userId])
 
   const s = stats.values?.[0] || { total: 0, raras: 0, brilhantes: 0, coletadas: 0 }
   const achievements = await getDB().query('SELECT * FROM achievements')
@@ -421,12 +409,12 @@ export async function checkAndGrantAchievements(userId: number) {
 
 export async function listUserAchievements(userId: number) {
   await ensureDatabase()
-  const query = `
+  const query = \`
     SELECT a.*, ua.data_desbloqueio,
     CASE WHEN ua.id IS NOT NULL THEN 1 ELSE 0 END as unlocked
     FROM achievements a
     LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?
-  `
+  \`
   const result = await getDB().query(query, [userId])
   return result.values || []
 }

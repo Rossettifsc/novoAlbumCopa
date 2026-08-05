@@ -83,6 +83,7 @@ import {
   IonSegment,
   IonSegmentButton,
   IonSearchbar,
+  onIonViewWillEnter
 } from '@ionic/vue';
 import StickerList from '@/composables/StickerList.vue';
 import StickerDetailModal from '@/components/StickerDetailModal.vue';
@@ -119,7 +120,7 @@ const openStickerDetailModal = (sticker: any) => {
 const closeStickerDetailModal = () => {
   isModalOpen.value = false;
   selectedSticker.value = null;
-  loadStickers(); // Recarrega as figurinhas para refletir as mudanças no modal
+  loadStickers();
 };
 
 const handleFavoriteToggle = async (id: number) => {
@@ -127,6 +128,10 @@ const handleFavoriteToggle = async (id: number) => {
 };
 
 onMounted(() => {
+  loadStickers();
+});
+
+onIonViewWillEnter(() => {
   loadStickers();
 });
 </script>

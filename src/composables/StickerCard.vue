@@ -1,10 +1,10 @@
 <template>
-  <ion-card @click="handleCardClick" :class="{ 'sticker-collected': sticker.collected }">
+  <ion-card @click="handleCardClick" :class="{ 'sticker-collected': sticker.collected === 1 }">
     <ion-card-content class="sticker-card-content">
       <img :src="sticker.photo" :alt="sticker.nome" class="sticker-image" />
       <div class="sticker-info">
         <ion-button fill="clear" size="small" class="favorite-button" @click.stop="handleFavoriteToggle">
-          <ion-icon :icon="sticker.favorite ? star : starOutline" :color="sticker.favorite ? 'warning' : 'medium'"></ion-icon>
+          <ion-icon :icon="sticker.favorite === 1 ? star : starOutline" :color="sticker.favorite === 1 ? 'warning' : 'medium'"></ion-icon>
         </ion-button>
         <ion-text>
           <h3>{{ sticker.nome }}</h3>
@@ -13,13 +13,13 @@
           <p>{{ sticker.team }}</p>
         </ion-text>
         <div class="badges-container">
-          <ion-badge :color="sticker.collected ? 'success' : 'medium'">
-            {{ sticker.collected ? 'Coletada' : 'Pendente' }}
+          <ion-badge :color="sticker.collected === 1 ? 'success' : 'medium'">
+            {{ sticker.collected === 1 ? 'Coletada' : 'Pendente' }}
           </ion-badge>
           <ion-badge :color="getRarityColor(sticker.raridade)">
             {{ sticker.raridade || 'comum' }}
           </ion-badge>
-          <ion-chip v-if="sticker.favorite" color="warning">
+          <ion-chip v-if="sticker.favorite === 1" color="warning">
             <ion-icon :icon="star" color="warning"></ion-icon>
             <ion-label>Favorita</ion-label>
           </ion-chip>
@@ -91,7 +91,7 @@ const handleFavoriteToggle = () => {
   padding: 12px;
   text-align: center;
   width: 100%;
-  position: relative; /* Para posicionar o ícone de favorito */
+  position: relative;
 }
 
 .sticker-info h3 {
@@ -121,6 +121,7 @@ const handleFavoriteToggle = () => {
   --padding-end: 4px;
   --padding-top: 4px;
   --padding-bottom: 4px;
+  z-index: 10;
 }
 
 ion-card {
