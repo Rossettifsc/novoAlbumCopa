@@ -80,6 +80,13 @@ async function ensureSqlJsDatabase() {
 }
 
 async function migrateFigurinhasSchema() {
+  const tableExistsResult = await db?.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'figurinhas'")
+  const tableExists = (tableExistsResult?.values?.length ?? 0) > 0
+
+  if (!tableExists) {
+    return
+  }
+
   const tableInfo = await db?.query('PRAGMA table_info(figurinhas)')
   const columns = (tableInfo?.values || []).map((column: any) => column.name)
 
@@ -157,8 +164,6 @@ async function ensureDatabase() {
       );
     `)
 
-    await migrateFigurinhasSchema()
-
     await db.execute(`
       CREATE TABLE IF NOT EXISTS figurinhas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -175,6 +180,8 @@ async function ensureDatabase() {
         FOREIGN KEY(user_id) REFERENCES usuarios(id)
       );
     `)
+
+    await migrateFigurinhasSchema()
 
     await db.execute(`
       CREATE TABLE IF NOT EXISTS achievements (
