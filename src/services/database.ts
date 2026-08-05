@@ -263,7 +263,7 @@ export async function listFigurinhas(userId: number, filter: string = 'all', sea
 
   if (search) {
     query += ' AND (nome LIKE ? OR team LIKE ?)'
-    params.push(\`%\${search}%\`, \`%\${search}%\`)
+    params.push(`%${search}%`, `%${search}%`)
   }
 
   const result = await getDB().query(query, params)
@@ -300,7 +300,7 @@ export async function listLastCollectedStickers(userId: number, limit: number = 
 
 export async function getAlbumStatistics(userId: number) {
   await ensureDatabase()
-  const result = await getDB().query(\`
+  const result = await getDB().query(`
     SELECT 
       COUNT(*) AS totalFigurinhas,
       SUM(CASE WHEN collected = 1 THEN 1 ELSE 0 END) AS totalColetadas,
@@ -309,7 +309,7 @@ export async function getAlbumStatistics(userId: number) {
       SUM(CASE WHEN raridade = 'brilhante' AND collected = 1 THEN 1 ELSE 0 END) AS brilhantesColetadas
     FROM figurinhas
     WHERE user_id = ?
-  \`, [userId])
+  `, [userId])
   const stats = result.values?.[0] || {}
 
   const totalFigurinhas = stats.totalFigurinhas || 0
@@ -328,7 +328,7 @@ export async function getAlbumStatistics(userId: number) {
 
 export async function getCollectorRanking(userId: number) {
   await ensureDatabase()
-  const result = await getDB().query(\`
+  const result = await getDB().query(`
     SELECT 
       SUM(CASE WHEN collected = 1 AND raridade = 'comum' THEN 1
                WHEN collected = 1 AND raridade = 'rara' THEN 5
@@ -336,7 +336,7 @@ export async function getCollectorRanking(userId: number) {
                ELSE 0 END) AS pontuacaoTotal
     FROM figurinhas
     WHERE user_id = ?
-  \`, [userId])
+  `, [userId])
 
   const pontuacaoTotal = Number(result.values?.[0]?.pontuacaoTotal || 0)
 
@@ -379,14 +379,14 @@ export async function getCollectorRanking(userId: number) {
 /* CONQUISTAS */
 export async function checkAndGrantAchievements(userId: number) {
   await ensureDatabase()
-  const stats = await getDB().query(\`
+  const stats = await getDB().query(`
     SELECT 
       COALESCE(COUNT(*), 0) AS total,
       COALESCE(SUM(CASE WHEN raridade = 'rara' AND collected = 1 THEN 1 ELSE 0 END), 0) AS raras,
       COALESCE(SUM(CASE WHEN raridade = 'brilhante' AND collected = 1 THEN 1 ELSE 0 END), 0) AS brilhantes,
       COALESCE(SUM(CASE WHEN collected = 1 THEN 1 ELSE 0 END), 0) AS coletadas
     FROM figurinhas WHERE user_id = ?
-  \`, [userId])
+  `, [userId])
 
   const s = stats.values?.[0] || { total: 0, raras: 0, brilhantes: 0, coletadas: 0 }
   const achievements = await getDB().query('SELECT * FROM achievements')
@@ -409,12 +409,12 @@ export async function checkAndGrantAchievements(userId: number) {
 
 export async function listUserAchievements(userId: number) {
   await ensureDatabase()
-  const query = \`
+  const query = `
     SELECT a.*, ua.data_desbloqueio,
     CASE WHEN ua.id IS NOT NULL THEN 1 ELSE 0 END as unlocked
     FROM achievements a
     LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?
-  \`
+  `
   const result = await getDB().query(query, [userId])
   return result.values || []
 }

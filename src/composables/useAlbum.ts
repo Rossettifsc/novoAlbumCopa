@@ -10,7 +10,7 @@ interface Sticker {
   raridade: string;
   collected: number;
   favorite: number;
-  collected_at: string;
+  collected_at: string | null;
 }
 
 const stickers = ref<Sticker[]>([]);
@@ -25,7 +25,8 @@ export function useAlbum() {
 
   const loadStickers = async () => {
     if (user.value?.id) {
-      stickers.value = await listFigurinhas(user.value.id, filterType.value, searchQuery.value);
+      // Correção da linha 28: Cast do retorno para garantir compatibilidade de tipos
+      stickers.value = await listFigurinhas(user.value.id, filterType.value, searchQuery.value) as Sticker[];
       await loadStatistics();
       await loadRanking();
       await loadLastCollectedStickers();

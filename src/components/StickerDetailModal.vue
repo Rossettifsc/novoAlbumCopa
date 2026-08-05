@@ -48,7 +48,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, computed } from 'vue';
+// Correção da linha 51: defineProps e defineEmits não devem ser importados do 'vue'
+import { computed } from 'vue';
 import {
   IonModal,
   IonHeader,
@@ -71,10 +72,23 @@ import {
 import { checkmarkCircle, closeCircle, addCircle, removeCircle, star, starOutline } from 'ionicons/icons';
 import { useAlbum } from '@/composables/useAlbum';
 
-const props = defineProps({
-  isOpen: Boolean,
-  sticker: Object,
-});
+// Interface local para tipagem
+interface Sticker {
+  id: number;
+  nome: string;
+  team: string;
+  photo: string;
+  raridade: string;
+  collected: number;
+  favorite: number;
+  collected_at: string | null;
+}
+
+// Correção da linha 74: Uso correto da macro defineProps com tipagem
+const props = defineProps<{
+  isOpen: boolean;
+  sticker: Sticker | null;
+}>();
 
 const emit = defineEmits(['close']);
 
