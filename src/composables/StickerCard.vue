@@ -16,12 +16,10 @@
           <ion-badge :color="getRarityColor(sticker.raridade)">
             {{ sticker.raridade || 'comum' }}
           </ion-badge>
-          <ion-icon
-            v-if="sticker.favorite"
-            :icon="star"
-            color="warning"
-            class="favorite-icon"
-          ></ion-icon>
+          <ion-chip v-if="sticker.favorite" color="warning">
+            <ion-icon :icon="star" color="warning"></ion-icon>
+            <ion-label>Favorita</ion-label>
+          </ion-chip>
         </div>
       </div>
     </ion-card-content>
@@ -29,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonCard, IonCardContent, IonText, IonBadge, IonIcon } from '@ionic/vue';
+import { IonCard, IonCardContent, IonText, IonBadge, IonChip, IonLabel, IonIcon } from '@ionic/vue';
 import { star } from 'ionicons/icons';
 
 interface Sticker {

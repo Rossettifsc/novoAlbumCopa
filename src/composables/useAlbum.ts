@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue';
-import { listFigurinhas, toggleSticker, toggleFavorite, getAlbumStatistics, getCollectorRanking } from '@/services/database';
+import { listFigurinhas, toggleSticker, toggleFavorite, getAlbumStatistics, getCollectorRanking, listLastCollectedStickers } from '@/services/database';
 import { useAuth } from './useAuth';
 
 interface Sticker {
@@ -14,10 +14,11 @@ interface Sticker {
 }
 
 const stickers = ref<Sticker[]>([]);
-const filterType = ref<'all' | 'collected' | 'pending' | 'favorite'>('all'); // Adicionado 'favorite'
+const filterType = ref<'all' | 'collected' | 'pending' | 'favorite'>('all');
 const searchQuery = ref('');
 const albumStatistics = ref<any>(null);
 const collectorRanking = ref<any>(null);
+const lastCollectedStickers = ref<any[]>([]);
 
 export function useAlbum() {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ export function useAlbum() {
       stickers.value = await listFigurinhas(user.value.id, filterType.value, searchQuery.value);
       await loadStatistics();
       await loadRanking();
+      await loadLastCollectedStickers();
     }
   };
 
@@ -39,6 +41,12 @@ export function useAlbum() {
   const loadRanking = async () => {
     if (user.value?.id) {
       collectorRanking.value = await getCollectorRanking(user.value.id);
+    }
+  };
+
+  const loadLastCollectedStickers = async () => {
+    if (user.value?.id) {
+      lastCollectedStickers.value = await listLastCollectedStickers(user.value.id, 10);
     }
   };
 
@@ -55,6 +63,9 @@ export function useAlbum() {
 
   const collectorScore = computed(() => collectorRanking.value?.pontuacaoTotal || 0);
   const collectorLevel = computed(() => collectorRanking.value?.nivel || 'Bronze');
+  const collectorNextLevel = computed(() => collectorRanking.value?.proximoNivel || 'Prata');
+  const collectorPointsToNextLevel = computed(() => collectorRanking.value?.pontosParaProximoNivel || 0);
+  const collectorProgressToNextLevel = computed(() => collectorRanking.value?.percentualProximoNivel || 0);
 
   const marcarColetada = async (id: number) => {
     if (user.value?.id) {
@@ -96,6 +107,9 @@ export function useAlbum() {
     completionPercentage,
     collectorScore,
     collectorLevel,
+    collectorNextLevel,
+    collectorPointsToNextLevel,
+    collectorProgressToNextLevel,
     loadStickers,
     marcarColetada,
     marcarFavorita,
@@ -104,6 +118,7 @@ export function useAlbum() {
     filterType,
     searchQuery,
     albumStatistics,
-    collectorRanking
+    collectorRanking,
+    lastCollectedStickers
   };
 }

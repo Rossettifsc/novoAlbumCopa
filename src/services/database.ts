@@ -349,17 +349,42 @@ export async function getCollectorRanking(userId: number) {
     FROM figurinhas
     WHERE user_id = ?
   `, [userId])
-  const pontuacaoTotal = result.values?.[0]?.pontuacaoTotal || 0
 
-  let nivel = ''
-  if (pontuacaoTotal >= 501) nivel = 'Diamante'
-  else if (pontuacaoTotal >= 251) nivel = 'Ouro'
-  else if (pontuacaoTotal >= 101) nivel = 'Prata'
-  else nivel = 'Bronze'
+  const pontuacaoTotal = Number(result.values?.[0]?.pontuacaoTotal || 0)
+
+  let nivel = 'Bronze'
+  let proximoNivel = 'Prata'
+  let pontosParaProximoNivel = 101
+  let percentualProximoNivel = 0
+
+  if (pontuacaoTotal >= 501) {
+    nivel = 'Diamante'
+    proximoNivel = 'Máximo'
+    pontosParaProximoNivel = 0
+    percentualProximoNivel = 100
+  } else if (pontuacaoTotal >= 251) {
+    nivel = 'Ouro'
+    proximoNivel = 'Diamante'
+    pontosParaProximoNivel = 501 - pontuacaoTotal
+    percentualProximoNivel = Number(((pontuacaoTotal - 251) / (501 - 251) * 100).toFixed(2))
+  } else if (pontuacaoTotal >= 101) {
+    nivel = 'Prata'
+    proximoNivel = 'Ouro'
+    pontosParaProximoNivel = 251 - pontuacaoTotal
+    percentualProximoNivel = Number(((pontuacaoTotal - 101) / (251 - 101) * 100).toFixed(2))
+  } else {
+    nivel = 'Bronze'
+    proximoNivel = 'Prata'
+    pontosParaProximoNivel = 101 - pontuacaoTotal
+    percentualProximoNivel = Number((pontuacaoTotal / 101 * 100).toFixed(2))
+  }
 
   return {
     pontuacaoTotal,
-    nivel
+    nivel,
+    proximoNivel,
+    pontosParaProximoNivel,
+    percentualProximoNivel
   }
 }
 
