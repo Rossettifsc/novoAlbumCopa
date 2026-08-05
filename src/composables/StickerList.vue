@@ -2,7 +2,11 @@
   <ion-grid>
     <ion-row>
       <ion-col size="6" size-md="4" size-lg="3" v-for="sticker in stickers" :key="sticker.id">
-        <StickerCard :sticker="sticker" @view-details="$emit('view-details', sticker)" />
+        <StickerCard
+          :sticker="sticker"
+          @view-details="$emit('view-details', sticker)"
+          @toggle-favorite="$emit('toggle-favorite', $event)"
+        />
       </ion-col>
     </ion-row>
     <ion-row v-if="stickers.length === 0">
@@ -36,6 +40,7 @@ defineProps<{
 
 defineEmits<{
   'view-details': [sticker: Sticker]
+  'toggle-favorite': [id: number]
 }>();
 </script>
 

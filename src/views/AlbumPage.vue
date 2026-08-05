@@ -49,7 +49,11 @@
         ></ion-searchbar>
       </div>
 
-      <StickerList :stickers="stickers" @view-details="openStickerDetailModal" />
+      <StickerList
+        :stickers="stickers"
+        @view-details="openStickerDetailModal"
+        @toggle-favorite="handleFavoriteToggle"
+      />
 
       <StickerDetailModal
         :is-open="isModalOpen"
@@ -93,7 +97,8 @@ const {
   pesquisar,
   setFilter,
   filterType,
-  searchQuery
+  searchQuery,
+  marcarFavorita
 } = useAlbum();
 
 const isModalOpen = ref(false);
@@ -115,6 +120,10 @@ const closeStickerDetailModal = () => {
   isModalOpen.value = false;
   selectedSticker.value = null;
   loadStickers(); // Recarrega as figurinhas para refletir as mudanças no modal
+};
+
+const handleFavoriteToggle = async (id: number) => {
+  await marcarFavorita(id);
 };
 
 onMounted(() => {

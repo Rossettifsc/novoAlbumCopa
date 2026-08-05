@@ -3,6 +3,9 @@
     <ion-card-content class="sticker-card-content">
       <img :src="sticker.photo" :alt="sticker.nome" class="sticker-image" />
       <div class="sticker-info">
+        <ion-button fill="clear" size="small" class="favorite-button" @click.stop="handleFavoriteToggle">
+          <ion-icon :icon="sticker.favorite ? star : starOutline" :color="sticker.favorite ? 'warning' : 'medium'"></ion-icon>
+        </ion-button>
         <ion-text>
           <h3>{{ sticker.nome }}</h3>
         </ion-text>
@@ -27,8 +30,8 @@
 </template>
 
 <script setup lang="ts">
-import { IonCard, IonCardContent, IonText, IonBadge, IonChip, IonLabel, IonIcon } from '@ionic/vue';
-import { star } from 'ionicons/icons';
+import { IonCard, IonCardContent, IonText, IonBadge, IonChip, IonLabel, IonButton, IonIcon } from '@ionic/vue';
+import { star, starOutline } from 'ionicons/icons';
 
 interface Sticker {
   id: number;
@@ -47,6 +50,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'view-details': [sticker: Sticker]
+  'toggle-favorite': [id: number]
 }>();
 
 const getRarityColor = (rarity?: string) => {
@@ -61,6 +65,10 @@ const getRarityColor = (rarity?: string) => {
 
 const handleCardClick = () => {
   emit('view-details', props.sticker);
+};
+
+const handleFavoriteToggle = () => {
+  emit('toggle-favorite', props.sticker.id);
 };
 </script>
 
@@ -105,11 +113,14 @@ const handleCardClick = () => {
   align-items: center;
 }
 
-.favorite-icon {
+.favorite-button {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 1.5em;
+  top: 4px;
+  right: 4px;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
 }
 
 ion-card {

@@ -2,30 +2,21 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>Minha Coleção</ion-title>
+        <ion-title>Minhas Favoritas</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content :fullscreen="true">
-      <ion-card class="ion-margin">
-        <ion-card-content>
-          <ion-text>
-            <h3>Figurinhas Coletadas</h3>
-            <p>Você tem <strong>{{ collectedStickersCount }}</strong> figurinha(s) de um total de {{ totalStickers }}.</p>
-          </ion-text>
-          <ion-progress-bar :value="completionPercentage / 100" color="success"></ion-progress-bar>
-        </ion-card-content>
-      </ion-card>
-
-      <div class="ion-padding" v-if="collectedStickers.length === 0">
+      <div class="ion-padding" v-if="favoriteStickers.length === 0">
         <ion-card>
           <ion-card-content class="ion-text-center">
-            <p>Sua coleção está vazia.</p>
-            <p>Vá para o Álbum e comece a colecionar!</p>
+            <ion-icon :icon="starOutline" size="large" color="medium"></ion-icon>
+            <p>Você ainda não tem figurinhas favoritas.</p>
+            <p>Clique em uma figurinha no álbum para favoritá-la!</p>
           </ion-card-content>
         </ion-card>
       </div>
 
-      <StickerList :stickers="collectedStickers" @view-details="openStickerDetailModal" />
+      <StickerList :stickers="favoriteStickers" @view-details="openStickerDetailModal" />
 
       <StickerDetailModal
         :is-open="isModalOpen"
@@ -46,26 +37,20 @@ import {
   IonContent,
   IonCard,
   IonCardContent,
-  IonText,
-  IonProgressBar
+  IonIcon
 } from '@ionic/vue';
+import { starOutline } from 'ionicons/icons';
 import StickerList from '@/composables/StickerList.vue';
 import StickerDetailModal from '@/components/StickerDetailModal.vue';
 import { useAlbum } from '@/composables/useAlbum';
 
-const { 
-  stickers, 
-  totalStickers,
-  collectedStickersCount, 
-  completionPercentage,
-  loadStickers 
-} = useAlbum();
+const { stickers, loadStickers } = useAlbum();
 
 const isModalOpen = ref(false);
 const selectedSticker = ref<any | null>(null);
 
-const collectedStickers = computed(() => {
-  return stickers.value.filter(s => s.collected === 1);
+const favoriteStickers = computed(() => {
+  return stickers.value.filter(s => s.favorite === 1);
 });
 
 const openStickerDetailModal = (sticker: any) => {
@@ -83,3 +68,9 @@ onMounted(() => {
   loadStickers();
 });
 </script>
+
+<style scoped>
+ion-card {
+  margin-top: 20px;
+}
+</style>
